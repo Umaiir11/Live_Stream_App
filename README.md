@@ -40,3 +40,8 @@ get: State management and dependency injection.
 flutter_screenutil: Responsive UI handling.
 
 permission_handler: Runtime permission management.
+
+
+![img.png](img.png)
+![img_1.png](img_1.png)
+![img_2.png](img_2.png)
