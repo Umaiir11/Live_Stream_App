@@ -1,0 +1,2 @@
+/Users/umairhashmi/andoid projects/Live_Stream_App/android/app/.cxx/RelWithDebInfo/3p5r3z14/x86/CMakeFiles/edit_cache.dir
+/Users/umairhashmi/andoid projects/Live_Stream_App/android/app/.cxx/RelWithDebInfo/3p5r3z14/x86/CMakeFiles/rebuild_cache.dir
