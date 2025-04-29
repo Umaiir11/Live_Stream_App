@@ -37,6 +37,7 @@ dependencies:
   agora_rtc_engine: ^6.5.0
   permission_handler:
   get:
+  shared_preferences:
 
 dev_dependencies:
   flutter_test:

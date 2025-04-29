@@ -1,16 +1,42 @@
-# agora_test_project
+🎥 Flutter Live Streaming & Calling App (MVVM + Agora)
+A feature-rich live streaming and real-time audio/video communication Flutter application built with a modern, scalable MVVM architecture. The app leverages Agora SDK for seamless low-latency live broadcasting and real-time communication, and offers a visually stunning UI optimized for user engagement and performance.
 
-A new Flutter project.
+🚀 Features Overview
+📡 Live Streaming (Broadcaster & Audience Mode)
+Powered by Agora RTC SDK.
 
-## Getting Started
+Toggle between Broadcaster and Audience modes in real-time.
 
-This project is a starting point for a Flutter application.
+Support for multi-host live sessions, screen orientation lock, and stream quality control.
 
-A few resources to get you started if this is your first Flutter project:
+Live chat, viewer count, and on-screen animations for better user interaction.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+🎥 Real-Time Audio & Video Calling
+One-on-one and group audio/video call support using Agora's Real-Time Communication engine.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Includes call status indicators, mute/camera toggle, call duration, and network status handling.
+
+Clean and responsive call screens with in-call controls.
+
+✨ Stunning Modern UI/UX
+Built with Flutter’s Material 3 and Custom UI components.
+
+Fully responsive and adaptive UI for all screen sizes.
+
+Smooth transitions, intuitive navigation, and animation-enhanced feedback.
+
+🧠 MVVM Architecture (Model-View-ViewModel)
+Modular and testable structure using the MVVM pattern with GetX for state management.
+
+Clean separation of concerns between UI, business logic, and data layers.
+
+Easy to maintain, scale, and extend.
+
+📦 Key Packages Used
+agora_rtc_engine: For real-time audio/video streaming.
+
+get: State management and dependency injection.
+
+flutter_screenutil: Responsive UI handling.
+
+permission_handler: Runtime permission management.

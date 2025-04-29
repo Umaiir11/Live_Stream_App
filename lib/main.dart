@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import 'call_video_view.dart';
 import 'join_stream_view.dart';
 import 'live_view.dart';
 
@@ -191,6 +192,20 @@ class HomeScreen extends StatelessWidget {
                           onPressed: () => Get.to(() => const JoinScreen()),
                         ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildActionButton(
+                          title: "Call",
+                          icon: Icons.call,
+                          color: Colors.blue,
+                          onPressed: () => Get.to(() => CallScreen()),
+                        ),
+                      ),
+
                     ],
                   ),
                 ],
