@@ -1,15 +1,13 @@
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_navigation/src/snackbar/snackbar.dart';
-import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
 
 import 'live_controller.dart';
 
 class LiveScreen extends StatefulWidget {
-  final bool isBroadcaster;
+  RxBool isBroadcaster;
   final String streamId;
 
   LiveScreen({
@@ -24,40 +22,66 @@ class LiveScreen extends StatefulWidget {
 
 class _LiveScreenState extends State<LiveScreen> {
   final LiveController controller = Get.put(LiveController());
+  bool hasShownIdInfo = false;
 
   @override
   Widget build(BuildContext context) {
-    // Use the fixed channel name from your document
+    // Use the fixed channel name or provided streamId
     final String channelToUse = widget.streamId.isNotEmpty ? widget.streamId : 'testapp';
 
     // Initialize in a post-frame callback to avoid calling during build
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      controller.initAgora(widget.isBroadcaster, channelToUse);
+      controller.initAgora(widget.isBroadcaster.value, channelToUse);
+
+      // Show stream ID info for broadcasters after joining
+      if (widget.isBroadcaster.value && !hasShownIdInfo) {
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted && controller.isJoined.value) {
+            _showStreamIdInfo();
+            hasShownIdInfo = true;
+          }
+        });
+      }
     });
 
     return Scaffold(
       appBar: AppBar(
         title: Obx(() => Text(
-            widget.isBroadcaster
-                ? "Broadcasting (ID: ${controller.channelId})"
+            widget.isBroadcaster.value
+                ? "Broadcasting"
                 : "Watching Stream"
         )),
         backgroundColor: Colors.black,
         actions: [
-          if (widget.isBroadcaster)
+          if (widget.isBroadcaster.value)
+            Obx(() =>
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Center(
+                    child: GestureDetector(
+                      onTap: () => _copyStreamId(controller.channelId.value),
+                      child: Row(
+                        children: [
+                          Text(
+                            "ID: ${controller.channelId.value}",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.copy, size: 16),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ),
+          if (widget.isBroadcaster.value)
             IconButton(
-              icon: const Icon(Icons.copy),
-              onPressed: () {
-                // Copy stream ID to clipboard functionality would go here
-                Get.snackbar(
-                    "Stream ID Copied",
-                    "Share this ID with viewers: ${controller.channelId}",
-                    backgroundColor: Colors.green.withOpacity(0.7),
-                    colorText: Colors.white,
-                    snackPosition: SnackPosition.BOTTOM
-                );
-              },
-              tooltip: "Copy Stream ID",
+              icon: const Icon(Icons.share),
+              onPressed: () => _showStreamIdInfo(),
+              tooltip: "Share Stream ID",
             ),
         ],
       ),
@@ -77,7 +101,7 @@ class _LiveScreenState extends State<LiveScreen> {
                 children: [
                   // Main video - either local or remote depending on role
                   Positioned.fill(
-                    child: widget.isBroadcaster
+                    child: widget.isBroadcaster.value
                         ? _localBroadcasterView()
                         : _remoteView(),
                   ),
@@ -104,6 +128,33 @@ class _LiveScreenState extends State<LiveScreen> {
                       ),
                     ),
                   ),
+
+                  // Stream ID display for broadcaster
+                  if (widget.isBroadcaster.value)
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: GestureDetector(
+                        onTap: () => _copyStreamId(controller.channelId.value),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.7),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.copy, color: Colors.white, size: 18),
+                              const SizedBox(width: 5),
+                              Text(
+                                "ID: ${controller.channelId.value}",
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               );
             }),
@@ -147,6 +198,80 @@ class _LiveScreenState extends State<LiveScreen> {
     );
   }
 
+  void _copyStreamId(String streamId) {
+    Clipboard.setData(ClipboardData(text: streamId)).then((_) {
+      Get.snackbar(
+        "Copied to Clipboard",
+        "Stream ID: $streamId has been copied. Share with viewers.",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(10),
+      );
+    });
+  }
+
+  void _showStreamIdInfo() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Your Stream Information'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Share this Stream ID with viewers:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      controller.channelId.value,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.copy),
+                    onPressed: () {
+                      _copyStreamId(controller.channelId.value);
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Viewers need to paste this ID in the "Join Stream" screen',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CLOSE'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildControlButton({
     required IconData icon,
     required String label,
@@ -180,7 +305,7 @@ class _LiveScreenState extends State<LiveScreen> {
   }
 
   Widget _localBroadcasterView() {
-      if (controller.engine == null) {
+    if (controller.engine == null) {
       return Container(color: Colors.black);
     }
     return AgoraVideoView(
