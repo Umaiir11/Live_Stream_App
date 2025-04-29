@@ -28,7 +28,9 @@ class _JoinScreenState extends State<JoinScreen> {
       appBar: AppBar(
         title: const Text("Join Stream"),
         centerTitle: true,
+        backgroundColor: Colors.black,
       ),
+      backgroundColor: Colors.white,
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Form(
@@ -46,8 +48,6 @@ class _JoinScreenState extends State<JoinScreen> {
                 style: TextStyle(fontSize: 16, color: Colors.grey),
               ),
               const SizedBox(height: 30),
-
-              // Stream ID input field
               TextFormField(
                 controller: _streamIdController,
                 decoration: InputDecoration(
@@ -67,27 +67,39 @@ class _JoinScreenState extends State<JoinScreen> {
                           _streamIdController.text = data.text!.trim();
                         });
                         Get.snackbar(
-                          "Pasted from clipboard",
+                          "Pasted",
                           "Stream ID pasted from clipboard",
                           backgroundColor: Colors.green,
                           colorText: Colors.white,
                           snackPosition: SnackPosition.BOTTOM,
+                          duration: const Duration(seconds: 2),
+                        );
+                      } else {
+                        Get.snackbar(
+                          "Error",
+                          "No text found in clipboard",
+                          backgroundColor: Colors.red,
+                          colorText: Colors.white,
+                          snackPosition: SnackPosition.BOTTOM,
+                          duration: const Duration(seconds: 2),
                         );
                       }
                     },
                   ),
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a stream ID';
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter a valid Stream ID';
+                  }
+                  if (value.trim().length < 3) {
+                    return 'Stream ID must be at least 3 characters';
                   }
                   return null;
                 },
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (_) => _joinStream(),
               ),
-
               const SizedBox(height: 16),
-
-              // Example text
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -95,9 +107,9 @@ class _JoinScreenState extends State<JoinScreen> {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.blue.withOpacity(0.3)),
                 ),
-                child: Column(
+                child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text(
                       "How to join a stream:",
                       style: TextStyle(fontWeight: FontWeight.bold),
@@ -111,10 +123,7 @@ class _JoinScreenState extends State<JoinScreen> {
                   ],
                 ),
               ),
-
               const Spacer(),
-
-              // Join button
               SizedBox(
                 width: double.infinity,
                 height: 54,
@@ -125,14 +134,14 @@ class _JoinScreenState extends State<JoinScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
+                    elevation: 2,
                   ),
                   onPressed: isLoading ? null : _joinStream,
                   icon: isLoading
-                      ? Container(
+                      ? const SizedBox(
                     width: 24,
                     height: 24,
-                    padding: const EdgeInsets.all(2.0),
-                    child: const CircularProgressIndicator(
+                    child: CircularProgressIndicator(
                       color: Colors.white,
                       strokeWidth: 3,
                     ),
@@ -140,7 +149,7 @@ class _JoinScreenState extends State<JoinScreen> {
                       : const Icon(Icons.login),
                   label: Text(
                     isLoading ? "Connecting..." : "Join Stream",
-                    style: const TextStyle(fontSize: 18),
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -159,13 +168,12 @@ class _JoinScreenState extends State<JoinScreen> {
 
       final streamId = _streamIdController.text.trim();
 
-      // Simulate a brief loading period (can remove in production)
+      // Navigate to LiveScreen after a brief delay (simulating connection)
       Future.delayed(const Duration(milliseconds: 800), () {
         setState(() {
           isLoading = false;
         });
 
-        // Navigate to the LiveScreen
         Get.off(() => LiveScreen(
           isBroadcaster: false.obs,
           streamId: streamId,

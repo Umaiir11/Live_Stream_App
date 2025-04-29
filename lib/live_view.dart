@@ -7,13 +7,13 @@ import 'package:get/get.dart';
 import 'live_controller.dart';
 
 class LiveScreen extends StatefulWidget {
-  RxBool isBroadcaster;
+  final RxBool isBroadcaster;
   final String streamId;
 
-  LiveScreen({
+  const LiveScreen({
     super.key,
     required this.isBroadcaster,
-    this.streamId = ''
+    this.streamId = '',
   });
 
   @override
@@ -26,14 +26,11 @@ class _LiveScreenState extends State<LiveScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Use the fixed channel name or provided streamId
     final String channelToUse = widget.streamId.isNotEmpty ? widget.streamId : 'testapp';
 
-    // Initialize in a post-frame callback to avoid calling during build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       controller.initAgora(widget.isBroadcaster.value, channelToUse);
 
-      // Show stream ID info for broadcasters after joining
       if (widget.isBroadcaster.value && !hasShownIdInfo) {
         Future.delayed(const Duration(seconds: 2), () {
           if (mounted && controller.isJoined.value) {
@@ -47,39 +44,35 @@ class _LiveScreenState extends State<LiveScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Obx(() => Text(
-            widget.isBroadcaster.value
-                ? "Broadcasting"
-                : "Watching Stream"
+          widget.isBroadcaster.value ? "Broadcasting" : "Watching Stream",
         )),
         backgroundColor: Colors.black,
         actions: [
           if (widget.isBroadcaster.value)
-            Obx(() =>
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Center(
-                    child: GestureDetector(
-                      onTap: () => _copyStreamId(controller.channelId.value),
-                      child: Row(
-                        children: [
-                          Text(
-                            "ID: ${controller.channelId.value}",
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(Icons.copy, size: 16),
-                        ],
+            Obx(() => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Center(
+                child: GestureDetector(
+                  onTap: () => _copyStreamId(controller.channelId.value),
+                  child: Row(
+                    children: [
+                      Text(
+                        "ID: ${controller.channelId.value}",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.copy, size: 16, color: Colors.white),
+                    ],
                   ),
                 ),
-            ),
+              ),
+            )),
           if (widget.isBroadcaster.value)
             IconButton(
-              icon: const Icon(Icons.share),
+              icon: const Icon(Icons.share, color: Colors.white),
               onPressed: () => _showStreamIdInfo(),
               tooltip: "Share Stream ID",
             ),
@@ -88,7 +81,6 @@ class _LiveScreenState extends State<LiveScreen> {
       backgroundColor: Colors.black,
       body: Column(
         children: [
-          // Main video area
           Expanded(
             child: Obx(() {
               if (!controller.isJoined.value) {
@@ -99,14 +91,11 @@ class _LiveScreenState extends State<LiveScreen> {
 
               return Stack(
                 children: [
-                  // Main video - either local or remote depending on role
                   Positioned.fill(
                     child: widget.isBroadcaster.value
                         ? _localBroadcasterView()
                         : _remoteView(),
                   ),
-
-                  // Stream info overlay
                   Positioned(
                     top: 10,
                     left: 10,
@@ -128,8 +117,6 @@ class _LiveScreenState extends State<LiveScreen> {
                       ),
                     ),
                   ),
-
-                  // Stream ID display for broadcaster
                   if (widget.isBroadcaster.value)
                     Positioned(
                       top: 10,
@@ -159,39 +146,40 @@ class _LiveScreenState extends State<LiveScreen> {
               );
             }),
           ),
-
-          // Bottom controls
           Container(
             color: Colors.black,
             padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Row(
+            child: Obx(() => Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildControlButton(
-                  icon: Icons.mic,
-                  label: "Mute",
-                  onPressed: () => controller.toggleAudio(),
-                  isActive: controller.isAudioEnabled.value,
-                ),
-                _buildControlButton(
-                  icon: Icons.videocam,
-                  label: "Video",
-                  onPressed: () => controller.toggleVideo(),
-                  isActive: controller.isVideoEnabled.value,
-                ),
-                _buildControlButton(
-                  icon: Icons.switch_camera,
-                  label: "Switch",
-                  onPressed: () => controller.switchCamera(),
-                ),
+                if (widget.isBroadcaster.value)
+                  _buildControlButton(
+                    icon: controller.isAudioEnabled.value ? Icons.mic : Icons.mic_off,
+                    label: controller.isAudioEnabled.value ? "Mute" : "Unmute",
+                    onPressed: () => controller.toggleAudio(),
+                    isActive: controller.isAudioEnabled.value,
+                  ),
+                if (widget.isBroadcaster.value)
+                  _buildControlButton(
+                    icon: controller.isVideoEnabled.value ? Icons.videocam : Icons.videocam_off,
+                    label: controller.isVideoEnabled.value ? "Video Off" : "Video On",
+                    onPressed: () => controller.toggleVideo(),
+                    isActive: controller.isVideoEnabled.value,
+                  ),
+                if (widget.isBroadcaster.value)
+                  _buildControlButton(
+                    icon: Icons.switch_camera,
+                    label: "Switch",
+                    onPressed: () => controller.switchCamera(),
+                  ),
                 _buildControlButton(
                   icon: Icons.call_end,
-                  label: "End",
+                  label: widget.isBroadcaster.value ? "End" : "Leave",
                   onPressed: () => controller.leaveChannel(),
                   backgroundColor: Colors.red,
                 ),
               ],
-            ),
+            )),
           ),
         ],
       ),
@@ -284,7 +272,8 @@ class _LiveScreenState extends State<LiveScreen> {
       children: [
         Container(
           decoration: BoxDecoration(
-            color: backgroundColor ?? (isActive ? Colors.grey.shade800 : Colors.red),
+            color: backgroundColor ??
+                (isActive ? Colors.grey.shade800 : Colors.red.shade700),
             shape: BoxShape.circle,
           ),
           padding: const EdgeInsets.all(12),
@@ -308,12 +297,22 @@ class _LiveScreenState extends State<LiveScreen> {
     if (controller.engine == null) {
       return Container(color: Colors.black);
     }
-    return AgoraVideoView(
+    return Obx(() => controller.isVideoEnabled.value
+        ? AgoraVideoView(
       controller: VideoViewController(
         rtcEngine: controller.engine!,
         canvas: const VideoCanvas(uid: 0),
       ),
-    );
+    )
+        : Container(
+      color: Colors.black,
+      child: const Center(
+        child: Text(
+          "Camera Off",
+          style: TextStyle(color: Colors.white, fontSize: 18),
+        ),
+      ),
+    ));
   }
 
   Widget _remoteView() {
@@ -338,9 +337,9 @@ class _LiveScreenState extends State<LiveScreen> {
                 const Text(
                   "Waiting for stream to start...",
                   style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -349,22 +348,18 @@ class _LiveScreenState extends State<LiveScreen> {
                   style: const TextStyle(color: Colors.white70),
                 ),
                 const SizedBox(height: 10),
-                // Status indicator
-                Obx(() {
-                  return Text(
-                    controller.isJoined.value
-                        ? "✅ Successfully joined channel"
-                        : "🔄 Joining channel...",
-                    style: TextStyle(
-                      color: controller.isJoined.value ? Colors.green : Colors.orange,
-                    ),
-                  );
-                }),
+                Obx(() => Text(
+                  controller.isJoined.value
+                      ? "✅ Successfully joined channel"
+                      : "🔄 Joining channel...",
+                  style: TextStyle(
+                    color: controller.isJoined.value ? Colors.green : Colors.orange,
+                  ),
+                )),
                 const SizedBox(height: 30),
                 if (controller.isJoined.value)
                   ElevatedButton(
                     onPressed: () {
-                      // Force reinitialize
                       controller.leaveChannel();
                       Future.delayed(const Duration(seconds: 1), () {
                         controller.initAgora(false, controller.channelId.value);

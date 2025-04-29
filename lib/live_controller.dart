@@ -1,14 +1,9 @@
-// Replace with your own Agora app ID and token
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_rx/src/rx_types/rx_types.dart';
-import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-
-// Using your Agora app ID and token from th  e uploaded document
+// Using your Agora app ID and token
 const String appId = "fff60e8b5bdf4187b84ab1291dd80c09";
 const String token = "007eJxTYJDZte1mnXFRRTqDi0qP3p6V6p8LX/1sntqes+fW77/WjScVGNLS0swMUi2STJNS0kwMLcyTLEwSkwyNLA1TUiwMkg0sP5YJZDQEMjIUv/dhYIRCEJ+doSS1uCSxoICBAQBRUSMe";
 const String defaultChannel = "testapp";
@@ -23,16 +18,15 @@ class LiveController extends GetxController {
   final RxString channelId = "".obs;
 
   Future<void> initAgora(bool broadcaster, String streamId) async {
-    // Set default values
     isBroadcaster.value = broadcaster;
     channelId.value = streamId.isEmpty ? defaultChannel : streamId;
     debugPrint("⚡️ Initializing Agora with channel: ${channelId.value}, role: ${broadcaster ? 'broadcaster' : 'audience'}");
 
     try {
-      // Request permissions first
+      // Request permissions
       Map<Permission, PermissionStatus> statuses = await [
         Permission.camera,
-        Permission.microphone
+        Permission.microphone,
       ].request();
 
       if (statuses[Permission.camera] != PermissionStatus.granted ||
@@ -47,31 +41,30 @@ class LiveController extends GetxController {
         return;
       }
 
-      // Create the engine if it doesn't exist
+      // Initialize engine
       if (engine == null) {
         engine = createAgoraRtcEngine();
-        await engine?.initialize(RtcEngineContext(
+        await engine!.initialize(const RtcEngineContext(
           appId: appId,
           channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
         ));
-
         debugPrint("✅ Engine initialized");
       }
 
-      // Configure the engine
+      // Configure engine
       if (broadcaster) {
-        await engine?.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
-        await engine?.enableVideo();
-        await engine?.enableAudio();
-        await engine?.startPreview();
+        await engine!.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
+        await engine!.enableVideo();
+        await engine!.enableAudio();
+        await engine!.startPreview();
         debugPrint("👤 Set as broadcaster");
       } else {
-        await engine?.setClientRole(role: ClientRoleType.clientRoleAudience);
+        await engine!.setClientRole(role: ClientRoleType.clientRoleAudience);
         debugPrint("👥 Set as audience");
       }
 
       // Set up event handlers
-      engine?.registerEventHandler(RtcEngineEventHandler(
+      engine!.registerEventHandler(RtcEngineEventHandler(
         onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
           debugPrint("✅ Successfully joined channel: ${connection.channelId}");
           isJoined.value = true;
@@ -98,9 +91,9 @@ class LiveController extends GetxController {
         },
       ));
 
-      // Join the channel
+      // Join channel
       debugPrint("🔄 Joining channel: ${channelId.value}");
-      await engine?.joinChannel(
+      await engine!.joinChannel(
         token: token,
         channelId: channelId.value,
         uid: 0,
@@ -127,30 +120,96 @@ class LiveController extends GetxController {
     }
   }
 
-  void toggleAudio() {
-    if (engine != null) {
-      isAudioEnabled.value = !isAudioEnabled.value;
-      engine?.muteLocalAudioStream(!isAudioEnabled.value);
+  void toggleAudio() async {
+    if (engine != null && isBroadcaster.value) {
+      try {
+        isAudioEnabled.value = !isAudioEnabled.value;
+        await engine!.muteLocalAudioStream(!isAudioEnabled.value);
+        debugPrint("🎙️ Audio ${isAudioEnabled.value ? 'enabled' : 'muted'}");
+        Get.snackbar(
+          "Audio",
+          isAudioEnabled.value ? "Microphone enabled" : "Microphone muted",
+          backgroundColor: Colors.blue,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 2),
+        );
+      } catch (e) {
+        debugPrint("❌ Error toggling audio: $e");
+        isAudioEnabled.value = !isAudioEnabled.value; // Revert state on error
+        Get.snackbar(
+          "Error",
+          "Failed to toggle audio",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
     }
   }
 
-  void toggleVideo() {
-    if (engine != null) {
-      isVideoEnabled.value = !isVideoEnabled.value;
-      engine?.muteLocalVideoStream(!isVideoEnabled.value);
+  void toggleVideo() async {
+    if (engine != null && isBroadcaster.value) {
+      try {
+        isVideoEnabled.value = !isVideoEnabled.value;
+        await engine!.muteLocalVideoStream(!isVideoEnabled.value);
+        if (isVideoEnabled.value) {
+          await engine!.startPreview();
+        } else {
+          await engine!.stopPreview();
+        }
+        debugPrint("📹 Video ${isVideoEnabled.value ? 'enabled' : 'muted'}");
+        Get.snackbar(
+          "Video",
+          isVideoEnabled.value ? "Camera enabled" : "Camera muted",
+          backgroundColor: Colors.blue,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 2),
+        );
+      } catch (e) {
+        debugPrint("❌ Error toggling video: $e");
+        isVideoEnabled.value = !isVideoEnabled.value; // Revert state on error
+        Get.snackbar(
+          "Error",
+          "Failed to toggle video",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
     }
   }
 
-  void switchCamera() {
-    engine?.switchCamera();
+  void switchCamera() async {
+    if (engine != null && isBroadcaster.value) {
+      try {
+        await engine!.switchCamera();
+        debugPrint("🔄 Camera switched");
+        Get.snackbar(
+          "Camera",
+          "Camera switched",
+          backgroundColor: Colors.blue,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 2),
+        );
+      } catch (e) {
+        debugPrint("❌ Error switching camera: $e");
+        Get.snackbar(
+          "Error",
+          "Failed to switch camera",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    }
   }
 
-  void leaveChannel() async {
+  Future<void> leaveChannel() async {
     try {
-      await engine?.leaveChannel();
-      await engine?.release();
+      if (engine != null) {
+        await engine!.leaveChannel();
+        await engine!.release();
+        debugPrint("✅ Left channel and released engine");
+      }
     } catch (e) {
-      debugPrint("Error leaving channel: $e");
+      debugPrint("❌ Error leaving channel: $e");
     } finally {
       engine = null;
       isJoined.value = false;
